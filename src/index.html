@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MarkChini Cleaner</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; overflow: hidden; }
+    #app { display: flex; flex-direction: column; height: 100vh; }
+
+    /* ---- Theme Variables ---- */
+    [data-theme="dark"], :root {
+      --bg-app: #0f172a;
+      --text-app: #e2e8f0;
+      --bg-toolbar: #1e293b;
+      --border-toolbar: #334155;
+      --text-title: #94a3b8;
+      --btn-bg: #334155;
+      --btn-border: #475569;
+      --btn-hover-bg: #475569;
+      --btn-hover-border: #64748b;
+      --btn-active-bg: #1e293b;
+      --sep-bg: #475569;
+      --label-color: #94a3b8;
+      --select-bg: #334155;
+      --select-border: #475569;
+      --select-hover-border: #64748b;
+      --select-focus-border: #60a5fa;
+      --select-color: #e2e8f0;
+      --pane-border: #334155;
+      --label-pane: #64748b;
+      --editor-bg: #0f172a;
+      --editor-color: #e2e8f0;
+      --editor-placeholder: #475569;
+      --h1-color: #f1f5f9;
+      --h2-color: #e2e8f0;
+      --h3-color: #cbd5e1;
+      --h-border: #334155;
+      --p-color: inherit;
+      --code-bg: #1e293b;
+      --code-border: #334155;
+      --code-color: inherit;
+      --inline-code-bg: #1e293b;
+      --bq-border: #475569;
+      --bq-color: #94a3b8;
+      --link-color: #60a5fa;
+      --link-hover: #93bbfd;
+      --hr-color: #334155;
+      --th-bg: #1e293b;
+      --td-border: #334155;
+      --status-bg: #1e293b;
+      --status-border: #334155;
+      --status-color: #64748b;
+      --toast-text: #fff;
+      --toast-success: #2563eb;
+      --toast-error: #dc2626;
+      --toast-info: #2563eb;
+      --divider-color: #334155;
+      --divider-hover: #475569;
+      --img-border: none;
+    }
+    [data-theme="light"] {
+      --bg-app: #ffffff;
+      --text-app: #1e293b;
+      --bg-toolbar: #f1f5f9;
+      --border-toolbar: #e2e8f0;
+      --text-title: #64748b;
+      --btn-bg: #ffffff;
+      --btn-border: #cbd5e1;
+      --btn-hover-bg: #e2e8f0;
+      --btn-hover-border: #94a3b8;
+      --btn-active-bg: #cbd5e1;
+      --sep-bg: #cbd5e1;
+      --label-color: #64748b;
+      --select-bg: #ffffff;
+      --select-border: #cbd5e1;
+      --select-hover-border: #94a3b8;
+      --select-focus-border: #3b82f6;
+      --select-color: #1e293b;
+      --pane-border: #e2e8f0;
+      --label-pane: #94a3b8;
+      --editor-bg: #ffffff;
+      --editor-color: #1e293b;
+      --editor-placeholder: #94a3b8;
+      --h1-color: #0f172a;
+      --h2-color: #1e293b;
+      --h3-color: #334155;
+      --h-border: #e2e8f0;
+      --p-color: inherit;
+      --code-bg: #f8fafc;
+      --code-border: #e2e8f0;
+      --code-color: inherit;
+      --inline-code-bg: #f1f5f9;
+      --bq-border: #cbd5e1;
+      --bq-color: #64748b;
+      --link-color: #2563eb;
+      --link-hover: #1d4ed8;
+      --hr-color: #e2e8f0;
+      --th-bg: #f8fafc;
+      --td-border: #e2e8f0;
+      --status-bg: #f1f5f9;
+      --status-border: #e2e8f0;
+      --status-color: #94a3b8;
+      --toast-text: #fff;
+      --toast-success: #2563eb;
+      --toast-error: #dc2626;
+      --toast-info: #2563eb;
+      --divider-color: #e2e8f0;
+      --divider-hover: #cbd5e1;
+      --img-border: 1px solid #e2e8f0;
+    }
+
+    #app { background: var(--bg-app); color: var(--text-app); }
+
+    #toolbar {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 16px;
+      background: var(--bg-toolbar);
+      border-bottom: 1px solid var(--border-toolbar);
+      flex-shrink: 0;
+    }
+    #toolbar .title {
+      font-size: 14px; font-weight: 600; color: var(--text-title);
+      margin-right: auto; user-select: none;
+    }
+    #toolbar button {
+      display: flex; align-items: center; gap: 6px;
+      padding: 6px 14px; border: 1px solid var(--btn-border);
+      border-radius: 6px; background: var(--btn-bg);
+      color: var(--text-app); font-size: 13px; cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    #toolbar button:hover { background: var(--btn-hover-bg); border-color: var(--btn-hover-border); }
+    #toolbar button:active { background: var(--btn-active-bg); }
+    #toolbar button svg { width: 16px; height: 16px; flex-shrink: 0; }
+    .toolbar-sep { width: 1px; height: 24px; background: var(--sep-bg); margin: 0 4px; }
+    .toolbar-settings { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+    .toolbar-settings label { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--label-color); white-space: nowrap; }
+    .toolbar-settings select {
+      padding: 3px 6px; border: 1px solid var(--select-border); border-radius: 4px;
+      background: var(--select-bg); color: var(--select-color); font-size: 12px; cursor: pointer;
+    }
+    .toolbar-settings select:hover { border-color: var(--select-hover-border); }
+    .toolbar-settings select:focus { outline: none; border-color: var(--select-focus-border); }
+
+    #panes { display: flex; flex: 1; overflow: hidden; }
+    .pane {
+      flex: 1; display: flex; flex-direction: column;
+      position: relative; overflow: hidden;
+    }
+    .pane-label {
+      position: absolute; top: 8px; right: 12px;
+      font-size: 11px; font-weight: 500; color: var(--label-pane);
+      text-transform: uppercase; letter-spacing: 1px;
+      user-select: none; z-index: 10;
+    }
+    #editor-pane { border-right: 1px solid var(--pane-border); }
+    #editor-pane .pane-label { right: auto; left: 12px; }
+
+    #markdown-input {
+      flex: 1; width: 100%; resize: none; border: none;
+      padding: 40px 20px 20px; font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', monospace;
+      font-size: 14px; line-height: 1.7; tab-size: 2;
+      background: var(--editor-bg); color: var(--editor-color);
+      outline: none;
+    }
+    #markdown-input::placeholder { color: var(--editor-placeholder); }
+
+    #preview-content {
+      flex: 1; padding: 40px 24px 24px; overflow-y: auto;
+      font-family: Georgia, 'Times New Roman', Times, serif;
+    }
+    #preview-content h1 { font-size: 1.8em; font-weight: 700; margin: 0 0 16px; color: var(--h1-color); border-bottom: 2px solid var(--h-border); padding-bottom: 8px; }
+    #preview-content h2 { font-size: 1.4em; font-weight: 600; margin: 24px 0 12px; color: var(--h2-color); }
+    #preview-content h3 { font-size: 1.15em; font-weight: 600; margin: 20px 0 8px; color: var(--h3-color); }
+    #preview-content p { margin: 0 0 12px; line-height: 1.7; color: var(--p-color); }
+    #preview-content pre { background: var(--code-bg); padding: 16px; border-radius: 8px; overflow-x: auto; margin: 12px 0; border: 1px solid var(--code-border); }
+    #preview-content code { font-family: 'Cascadia Code', 'Fira Code', monospace; font-size: 0.9em; color: var(--code-color); }
+    #preview-content pre code { background: none; padding: 0; }
+    #preview-content p code { background: var(--inline-code-bg); padding: 2px 6px; border-radius: 4px; }
+    #preview-content blockquote { border-left: 4px solid var(--bq-border); padding-left: 16px; margin: 12px 0; color: var(--bq-color); font-style: italic; }
+    #preview-content ul, #preview-content ol { margin: 8px 0; padding-left: 24px; }
+    #preview-content li { margin: 4px 0; }
+    #preview-content a { color: var(--link-color); text-decoration: underline; }
+    #preview-content a:hover { color: var(--link-hover); }
+    #preview-content img { max-width: 100%; border-radius: 6px; margin: 12px 0; border: var(--img-border); }
+    #preview-content hr { border: none; border-top: 1px solid var(--hr-color); margin: 24px 0; }
+    #preview-content table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+    #preview-content th, #preview-content td { border: 1px solid var(--td-border); padding: 8px 12px; text-align: left; }
+    #preview-content th { background: var(--th-bg); font-weight: 600; }
+
+    #status-bar {
+      display: flex; align-items: center; gap: 16px;
+      padding: 4px 16px; font-size: 12px; color: var(--status-color);
+      background: var(--status-bg); border-top: 1px solid var(--status-border);
+      flex-shrink: 0;
+    }
+    #status-bar .file-path { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #status-bar .word-count { white-space: nowrap; }
+
+    .toast {
+      position: fixed; bottom: 48px; right: 24px;
+      padding: 10px 20px; border-radius: 8px;
+      font-size: 14px; font-weight: 500;
+      color: var(--toast-text); z-index: 9999;
+      transition: opacity 0.3s, transform 0.3s;
+      opacity: 0; transform: translateY(10px);
+      pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.success { background: var(--toast-success); }
+    .toast.error { background: var(--toast-error); }
+    .toast.info { background: var(--toast-info); }
+
+    .divider {
+      width: 4px; cursor: col-resize; background: transparent;
+      position: relative; flex-shrink: 0;
+      transition: background 0.15s;
+    }
+    .divider:hover, .divider.active { background: var(--divider-hover); }
+    .divider::after {
+      content: ''; position: absolute; top: 0; left: 2px;
+      width: 1px; height: 100%; background: var(--divider-color);
+    }
+
+    /* Icon-only buttons */
+    .btn-icon { padding: 6px 8px !important; }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <!-- Toolbar -->
+    <div id="toolbar">
+      <span class="title">MarkChini Cleaner</span>
+      <button id="btn-open" title="Open Markdown File (Ctrl+O)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+        Open
+      </button>
+      <button id="btn-save" title="Save File (Ctrl+S)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        Save
+      </button>
+      <button id="btn-export" title="Export PDF (Ctrl+P)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        Export PDF
+      </button>
+      <button id="btn-dark-mode" class="btn-icon" title="Toggle dark/light mode">
+        <svg id="dark-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+      </button>
+      <button id="btn-image" class="btn-icon" title="Insert image (Ctrl+Shift+I)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+      </button>
+      <div class="toolbar-sep"></div>
+      <div class="toolbar-settings">
+        <label>Font
+          <select id="setting-font">
+            <option value="serif">Serif</option>
+            <option value="sans-serif">Sans-Serif</option>
+            <option value="monospace">Monospace</option>
+          </select>
+        </label>
+        <label>Size
+          <select id="setting-size">
+            <option value="small">Small</option>
+            <option value="medium" selected>Medium</option>
+            <option value="large">Large</option>
+          </select>
+        </label>
+        <label>Margin
+          <select id="setting-margin">
+            <option value="small">Small</option>
+            <option value="medium" selected>Medium</option>
+            <option value="large">Large</option>
+          </select>
+        </label>
+      </div>
+    </div>
+
+    <!-- Panes -->
+    <div id="panes">
+      <div id="editor-pane" class="pane">
+        <span class="pane-label">Editor</span>
+        <textarea id="markdown-input" placeholder="Type or paste Markdown here..."></textarea>
+      </div>
+      <div id="divider" class="divider"></div>
+      <div id="preview-pane" class="pane">
+        <span class="pane-label">Preview</span>
+        <div id="preview-content"></div>
+      </div>
+    </div>
+
+    <!-- Status Bar -->
+    <div id="status-bar">
+      <span class="file-path" id="file-path">No file open</span>
+      <span class="word-count" id="word-count">0 words</span>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast"></div>
+
+  <script>
+    const TAURI = window.__TAURI__;
+    const invoke = TAURI?.core?.invoke || (() => { throw new Error('Not in Tauri'); });
+  </script>
+  <script src="main.js"></script>
+</body>
+</html>

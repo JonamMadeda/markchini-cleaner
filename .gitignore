@@ -1,0 +1,18 @@
+# Rust / Cargo
+src-tauri/target/
+
+# Windows
+*.exe
+*.msi
+*.zip
+*.sig
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo

@@ -1,0 +1,104 @@
+name: Release
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Install WiX Toolset v3
+        run: |
+          dotnet tool install --global wix --version 5.0.1 2>$null
+          dotnet wix toolset install --global 2>$null
+
+      - name: Cache cargo dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Build release bundle
+        run: |
+          cd src-tauri
+          cargo tauri build --bundles msi --ci
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PASSWORD: ${{ secrets.TAURI_SIGNING_PASSWORD }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Prepare update artifacts
+        shell: pwsh
+        run: |
+          $VERSION = "${{ github.ref_name }}".TrimStart('v')
+          $MSI_DIR = "src-tauri/target/release/bundle/msi"
+          $MSI_FILE = Get-ChildItem -Path $MSI_DIR -Filter "*.msi" | Select-Object -First 1
+          $SIG_FILE = Get-ChildItem -Path $MSI_DIR -Filter "*.sig" | Select-Object -First 1
+
+          if (-not $MSI_FILE) {
+            Write-Error "No MSI found"
+            exit 1
+          }
+
+          $SIGNATURE = ""
+          if ($SIG_FILE) {
+            $SIGNATURE = Get-Content $SIG_FILE.FullName -Raw | ForEach-Object { $_.Trim() }
+          }
+
+          $UPDATE_JSON = @{
+            version = $VERSION
+            notes = "See https://github.com/markchini/cleaner/releases/tag/v$VERSION"
+            pub_date = (Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ")
+            platforms = @{
+              "windows-x86_64" = @{
+                signature = $SIGNATURE
+                url = "https://github.com/markchini/cleaner/releases/download/${{ github.ref_name }}/$($MSI_FILE.Name).zip"
+              }
+            }
+          }
+          $UPDATE_JSON | ConvertTo-Json -Depth 10 | Set-Content -Path "update.json" -Encoding UTF8
+
+      - name: Compress MSI with zip
+        shell: pwsh
+        run: |
+          $MSI_DIR = "src-tauri/target/release/bundle/msi"
+          $MSI_FILE = Get-ChildItem -Path $MSI_DIR -Filter "*.msi" | Select-Object -First 1
+          if ($MSI_FILE) {
+            Compress-Archive -Path $MSI_FILE.FullName -DestinationPath "$($MSI_FILE.FullName).zip" -Force
+          }
+
+      - name: Create release and upload assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: MarkChini ${{ github.ref_name }}
+          body: |
+            ## MarkChini ${{ github.ref_name }}
+
+            ### Download
+            - **Windows Installer (.msi)**: See assets below
+            - Requires Windows 10/11 with WebView2 Runtime (pre-installed)
+            - Requires Google Chrome or Microsoft Edge for PDF export
+
+            ### Changelog
+            See [commits](https://github.com/markchini/cleaner/compare/${{ github.ref_name }}) for full changelog.
+          draft: false
+          prerelease: false
+          files: |
+            src-tauri/target/release/bundle/msi/*.msi
+            src-tauri/target/release/bundle/msi/*.sig
+            src-tauri/target/release/bundle/msi/*.zip
+            update.json
