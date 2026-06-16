@@ -22,9 +22,7 @@ jobs:
           targets: x86_64-pc-windows-msvc
 
       - name: Install WiX Toolset
-        run: |
-          dotnet tool install --global wix --version 5.0.1 2>$null
-          wix toolset install --global 2>$null
+        run: choco install wixtoolset --version 3.14.1 -y --limit-output --no-progress
 
       - name: Cache cargo dependencies
         uses: Swatinem/rust-cache@v2

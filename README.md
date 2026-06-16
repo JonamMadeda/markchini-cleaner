@@ -37,9 +37,8 @@
 
 ```powershell
 # Install Rust (https://rustup.rs)
-# Install WiX Toolset
-dotnet tool install --global wix --version 5.0.1
-wix toolset install --global
+# Install WiX Toolset (v3 via Chocolatey)
+choco install wixtoolset --version 3.14.1 -y
 
 # Clone and build
 git clone https://github.com/JonamMadeda/markchini-cleaner.git
