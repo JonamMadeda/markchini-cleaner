@@ -2,9 +2,16 @@ use pulldown_cmark::{Parser, Event, Tag, TagEnd, Options, CodeBlockKind, Heading
 use std::path::PathBuf;
 
 const CSS: &str = r#"@media print {
+*, *::before, *::after {
+box-sizing: border-box;
+}
+html {
+margin: 0;
+padding: 0;
+}
 @page {
 size: a4;
-margin: 2.5cm !important;
+margin: 2.5cm;
 @bottom-center {
 content: counter(page);
 font-family: "Georgia", "Times New Roman", serif;
@@ -17,7 +24,11 @@ font-family: "Georgia", "Times New Roman", serif;
 font-size: 11pt;
 line-height: 1.6;
 color: #1a1a1a;
-max-width: 100%;
+margin: 0;
+padding: 0;
+word-wrap: break-word;
+overflow-wrap: break-word;
+word-break: break-word;
 }
 table {
 width: 100% !important;
@@ -25,11 +36,16 @@ border-collapse: collapse !important;
 margin: 1.5rem 0 !important;
 page-break-inside: avoid !important;
 break-inside: avoid-page !important;
+table-layout: fixed !important;
 }
 th, td {
 border: 1px solid #dedede !important;
 padding: 10px !important;
 text-align: left !important;
+font-size: 11pt;
+word-wrap: break-word;
+overflow-wrap: break-word;
+word-break: break-word;
 }
 th {
 background-color: #f7f7f7 !important;
@@ -43,6 +59,7 @@ border-left: 3px solid #d0d0d0;
 padding-left: 12pt;
 margin: 1.5rem 0;
 color: #555;
+font-size: 11pt;
 }
 pre {
 display: block !important;
@@ -51,25 +68,32 @@ break-inside: avoid-page !important;
 background: #f5f5f5;
 padding: 1rem;
 border-radius: 4px;
-overflow-x: auto;
 margin: 1.5rem 0;
+font-size: 10pt;
+white-space: pre-wrap;
+word-wrap: break-word;
+overflow-wrap: break-word;
+word-break: break-word;
 }
 code {
 font-family: "Courier New", monospace;
-font-size: 0.9em;
+font-size: 10pt;
 }
 pre code {
 background: none;
 padding: 0;
 border-radius: 0;
+font-size: 10pt;
 }
 img {
-max-width: 100%;
+max-width: 100% !important;
 height: auto;
 }
 h1, h2, h3, h4, h5, h6 {
 color: #111111;
 page-break-after: avoid;
+word-wrap: break-word;
+overflow-wrap: break-word;
 }
 ul, ol {
 margin: 1rem 0;
@@ -77,9 +101,11 @@ padding-left: 2rem;
 }
 li {
 margin: 0.4rem 0;
+font-size: 11pt;
 }
 p {
 margin: 0.8rem 0;
+font-size: 11pt;
 }
 }"#;
 
